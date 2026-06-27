@@ -1,0 +1,31 @@
+{
+  "name": "dineflow",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace frontend\" \"npm run dev --workspace backend\"",
+    "frontend": "npm run dev --workspace frontend",
+    "backend": "npm run dev --workspace backend",
+    "build": "npm run build --workspace frontend",
+    "install:all": "npm install --workspaces",
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jeetaksh25/summer-term.git"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^10.0.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.9.0"
+  },
+  "dependencies": {
+    "playwright:": "^1.61.0"
+  }
+}
