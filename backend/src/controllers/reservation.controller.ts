@@ -1,17 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import Reservation from "../models/reservation.model.js";
-
-const toUtcDayBounds = (dateInput: string | Date) => {
-    const date = typeof dateInput === "string" ? dateInput : dateInput.toISOString().split("T")[0];
-    return {
-        start: new Date(`${date}T00:00:00.000Z`),
-        end: new Date(`${date}T23:59:59.999Z`),
-    };
-};
-
-const timesOverlap = (aStart: string, aEnd: string, bStart: string, bEnd: string) => {
-    return aStart < bEnd && aEnd > bStart;
-};
+import Table from "../models/table.model.js";
+import {
+    toUtcDayBounds,
+    timesOverlap,
+    activeReservationStatuses,
+    recomputeTableStatus,
+} from "../utils/booking.js";
 
 export const getReservation = async (req: Request, res: Response,
 next: NextFunction) => {
@@ -37,7 +32,7 @@ export const getAvailability = async (req: Request, res: Response, next: NextFun
         const bounds = toUtcDayBounds(date);
         const reservations = await Reservation.find({
             date: { $gte: bounds.start, $lte: bounds.end },
-            status: { $nin: ["cancelled", "no-show"] },
+            status: { $in: activeReservationStatuses },
         }).select("table startTime endTime").lean();
 
         const slots = reservations.map((r) => ({
@@ -56,10 +51,16 @@ export const getAvailability = async (req: Request, res: Response, next: NextFun
 export const createReservation = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { table, date, startTime, endTime } = req.body;
+        const tableDoc = await Table.findById(table);
+        if (!tableDoc || !tableDoc.isActive || tableDoc.status === "maintenance") {
+            return res.status(400).json({ message: "This table is not available for booking" });
+        }
+
         const bounds = toUtcDayBounds(date);
         const existing = await Reservation.find({
             table,
             date: { $gte: bounds.start, $lte: bounds.end },
+            status: { $in: activeReservationStatuses },
         }).lean();
 
         const overlaps = existing.some((r) =>
@@ -73,6 +74,7 @@ export const createReservation = async (req: Request, res: Response, next: NextF
         const reservation = new Reservation(req.body);
         await reservation.save();
         await reservation.populate("table", "tableNumber capacity");
+        await recomputeTableStatus(table);
 
         res.status(201).json(reservation);
     } catch (error) {
@@ -89,6 +91,13 @@ export const updateReservation = async (req: Request, res: Response,next: NextFu
             return res.status(404).json({ message: "Reservation not found"});
         }
 
+        if (req.body.status || req.body.table) {
+            const tableId = typeof reservation.table === "string"
+                ? reservation.table
+                : reservation.table._id.toString();
+            await recomputeTableStatus(tableId);
+        }
+
         res.status(200).json(reservation);
 
     } catch(error){
@@ -99,12 +108,20 @@ export const updateReservation = async (req: Request, res: Response,next: NextFu
 
 export const cancelReservation = async (req: Request, res: Response, next: NextFunction) => {
     try{
-
-        const reservation = await Reservation.findByIdAndDelete(req.params.id).populate("table", "tableNumber capacity");
+        const reservation = await Reservation.findByIdAndUpdate(
+            req.params.id,
+            { status: "cancelled" },
+            { new: true }
+        ).populate("table", "tableNumber capacity");
 
         if(!reservation){
             return res.status(404).json({ message: "Reservation not found"});
         }
+
+        const tableId = typeof reservation.table === "string"
+            ? reservation.table
+            : reservation.table._id.toString();
+        await recomputeTableStatus(tableId);
 
         res.status(200).json(reservation);
 

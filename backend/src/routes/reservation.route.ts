@@ -17,6 +17,6 @@ router.get("/availability", getAvailability);
 router.get("/", protect, restrictTo("admin", "owner", "staff"), getReservation);
 router.post("/", guestBookingLimiter, validate(reservationSchema), createReservation);
 router.put("/:id", protect, restrictTo("admin", "owner", "staff"), updateReservation);
-router.patch("/:id/cancel", cancelReservation);
+router.patch("/:id/cancel", protect, restrictTo("admin", "owner", "staff"), cancelReservation);
 
 export default router;

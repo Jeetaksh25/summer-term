@@ -3,11 +3,27 @@
 import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
-import { ArrowRight, Calendar, ListOrdered, LayoutDashboard } from "lucide-react";
+import {
+  motion,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "motion/react";
+import {
+  ArrowRight,
+  Calendar,
+  ListOrdered,
+  LayoutDashboard,
+} from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
-import { AnimatedSection, StaggerContainer, StaggerItem, SplitText, ParallaxImage } from "@/components/ui/animated-section";
+import {
+  AnimatedSection,
+  StaggerContainer,
+  StaggerItem,
+  SplitText,
+  ParallaxImage,
+} from "@/components/ui/animated-section";
 
 export default function Home() {
   const reduce = useReducedMotion();
@@ -42,49 +58,57 @@ export default function Home() {
         </motion.div>
 
         <Container className="relative z-10">
-          <motion.p
-            initial={reduce ? false : { opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.17, 1, 0.27, 1] }}
-            className="text-sm font-mono uppercase tracking-[0.22em] text-primary"
-          >
-            DineFlow
-          </motion.p>
-
-          <h1 className="mt-6 max-w-5xl font-display text-[clamp(3rem,9vw,8rem)] font-bold leading-[0.92] tracking-tight text-foreground">
+          <h1 className="mt-6 max-w-6xl font-display text-[clamp(3rem,9vw,8rem)] font-bold leading-[1.1] tracking-tight text-foreground">
             <motion.span
               initial={reduce ? false : { opacity: 0, y: 60 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.08, ease: [0.17, 1, 0.27, 1] }}
+              transition={{
+                duration: 1,
+                delay: 0.08,
+                ease: [0.17, 1, 0.27, 1],
+              }}
               className="block"
             >
-              Book a table
+              Book a Table
             </motion.span>
             <motion.span
               initial={reduce ? false : { opacity: 0, y: 60 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.18, ease: [0.17, 1, 0.27, 1] }}
+              transition={{
+                duration: 1,
+                delay: 0.18,
+                ease: [0.17, 1, 0.27, 1],
+              }}
               className="block"
             >
-              Run the floor
+              Skip the Wait
             </motion.span>
             <motion.span
               initial={reduce ? false : { opacity: 0, y: 60 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.28, ease: [0.17, 1, 0.27, 1] }}
+              transition={{
+                duration: 1,
+                delay: 0.28,
+                ease: [0.17, 1, 0.27, 1],
+              }}
               className="block text-primary"
             >
-              Stay in flow
+              Dine with Ease
             </motion.span>
           </h1>
 
           <motion.p
             initial={reduce ? false : { opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 0.45, ease: [0.17, 1, 0.27, 1] }}
+            transition={{
+              duration: 0.9,
+              delay: 0.45,
+              ease: [0.17, 1, 0.27, 1],
+            }}
             className="mt-8 max-w-lg text-xl leading-relaxed text-muted-foreground md:text-2xl"
           >
-            A calm reservation and waitlist experience for modern restaurants and their guests
+            A calm reservation and waitlist experience for modern restaurants
+            and their guests
           </motion.p>
 
           <motion.div
@@ -93,13 +117,22 @@ export default function Home() {
             transition={{ duration: 0.9, delay: 0.6, ease: [0.17, 1, 0.27, 1] }}
             className="mt-10 flex flex-wrap items-center gap-4"
           >
-            <Button asChild size="lg" className="h-14 gap-2 rounded-full px-8 text-base">
+            <Button
+              asChild
+              size="lg"
+              className="h-14 gap-2 rounded-full px-8 text-base"
+            >
               <Link href="/reservations">
                 Book a table
                 <ArrowRight className="size-5" strokeWidth={1.5} />
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="h-14 rounded-full px-8 text-base">
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="h-14 rounded-full px-8 text-base"
+            >
               <Link href="/tables">View tables</Link>
             </Button>
           </motion.div>
@@ -114,7 +147,11 @@ export default function Home() {
           <div className="flex h-12 w-7 items-start justify-center rounded-full border-2 border-foreground/20 p-1">
             <motion.div
               animate={{ y: [0, 12, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
               className="h-1.5 w-1.5 rounded-full bg-foreground/40"
             />
           </div>
@@ -125,16 +162,21 @@ export default function Home() {
         <Container>
           <AnimatedSection className="mb-16 max-w-3xl">
             <h2 className="font-display text-4xl font-semibold tracking-tight md:text-5xl">
-              Everything a restaurant needs
+              Everything you need
               <br className="hidden md:block" />
-              <span className="text-primary">Nothing it does not</span>
+              <span className="text-primary">to manage your restaurant</span>
             </h2>
+
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              From the first guest request to the final seating, DineFlow keeps the day organized
+              Manage reservations, waitlists, table availability, and guest
+              seating from a single, intuitive dashboard.
             </p>
           </AnimatedSection>
 
-          <StaggerContainer className="grid gap-6 md:grid-cols-2 lg:grid-cols-3" stagger={0.12}>
+          <StaggerContainer
+            className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+            stagger={0.12}
+          >
             <StaggerItem>
               <FeatureCard
                 icon={<Calendar className="size-5" strokeWidth={1.5} />}
@@ -164,7 +206,10 @@ export default function Home() {
         <Container>
           <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
             <div className="order-2 lg:order-1">
-              <SplitText className="text-sm font-mono uppercase tracking-[0.22em] text-primary" delay={0.1}>
+              <SplitText
+                className="text-sm font-mono uppercase tracking-[0.22em] text-primary"
+                delay={0.1}
+              >
                 For guests
               </SplitText>
               <AnimatedSection delay={0.2}>
@@ -174,11 +219,16 @@ export default function Home() {
               </AnimatedSection>
               <AnimatedSection delay={0.3}>
                 <p className="mt-5 max-w-md text-lg leading-relaxed text-muted-foreground">
-                  Pick a table, choose a time, and receive confirmation. No account needed, no endless forms
+                  Pick a table, choose a time, and receive confirmation. No
+                  account needed, no endless forms
                 </p>
               </AnimatedSection>
               <AnimatedSection delay={0.4}>
-                <Button asChild className="mt-8 h-14 gap-2 rounded-full px-8 text-base" size="lg">
+                <Button
+                  asChild
+                  className="mt-8 h-14 gap-2 rounded-full px-8 text-base"
+                  size="lg"
+                >
                   <Link href="/reservations">
                     Make a reservation
                     <ArrowRight className="size-5" strokeWidth={1.5} />
@@ -191,7 +241,7 @@ export default function Home() {
               <ParallaxImage
                 src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1400&h=1400&q=85"
                 alt="Table set for service"
-                className="aspect-square w-full rounded-[2rem]"
+                className="aspect-[4/3] w-full rounded-[2rem]"
                 speed={0.12}
               />
             </div>
@@ -212,7 +262,10 @@ export default function Home() {
             </div>
 
             <div className="order-2">
-              <SplitText className="text-sm font-mono uppercase tracking-[0.22em] text-primary" delay={0.1}>
+              <SplitText
+                className="text-sm font-mono uppercase tracking-[0.22em] text-primary"
+                delay={0.1}
+              >
                 For staff
               </SplitText>
               <AnimatedSection delay={0.2}>
@@ -222,11 +275,17 @@ export default function Home() {
               </AnimatedSection>
               <AnimatedSection delay={0.3}>
                 <p className="mt-5 max-w-md text-lg leading-relaxed text-muted-foreground">
-                  See table status at a glance, update reservations, and move the waitlist forward with a few clicks
+                  See table status at a glance, update reservations, and move
+                  the waitlist forward with a few clicks
                 </p>
               </AnimatedSection>
               <AnimatedSection delay={0.4}>
-                <Button asChild variant="outline" className="mt-8 h-14 gap-2 rounded-full px-8 text-base" size="lg">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="mt-8 h-14 gap-2 rounded-full px-8 text-base"
+                  size="lg"
+                >
                   <Link href="/admin/login">
                     Open admin portal
                     <ArrowRight className="size-5" strokeWidth={1.5} />
@@ -249,7 +308,11 @@ export default function Home() {
                 Start taking reservations and managing your waitlist today
               </p>
             </div>
-            <Button asChild size="lg" className="h-14 gap-2 rounded-full px-8 text-base">
+            <Button
+              asChild
+              size="lg"
+              className="h-14 gap-2 rounded-full px-8 text-base"
+            >
               <Link href="/reservations">
                 Book now
                 <ArrowRight className="size-5" strokeWidth={1.5} />
@@ -276,8 +339,12 @@ function FeatureCard({
       <div className="flex size-12 items-center justify-center rounded-xl bg-secondary text-primary transition-all duration-500 group-hover:bg-primary group-hover:text-primary-foreground">
         {icon}
       </div>
-      <h3 className="mt-6 font-display text-xl font-semibold tracking-tight">{title}</h3>
-      <p className="mt-2 text-base leading-relaxed text-muted-foreground">{description}</p>
+      <h3 className="mt-6 font-display text-xl font-semibold tracking-tight">
+        {title}
+      </h3>
+      <p className="mt-2 text-base leading-relaxed text-muted-foreground">
+        {description}
+      </p>
     </div>
   );
 }

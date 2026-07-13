@@ -22,7 +22,7 @@ const LOCATIONS = [
 ];
 
 export default function BookReservationPage() {
-  const { tables, availability, loading, errors, fetchTables, fetchAvailability, createReservation, setSelectedTable, clearError } = useFunctionStore();
+  const { tables, availability, loading, errors, fetchTables, fetchAvailability, createReservation, selectedTable, setSelectedTable, clearError } = useFunctionStore();
 
   const [form, setForm] = useState({
     customerName: "",
@@ -48,7 +48,6 @@ export default function BookReservationPage() {
   }, [form.date, fetchAvailability]);
 
   useEffect(() => {
-    const { selectedTable } = useFunctionStore.getState();
     if (!selectedTable) return;
     const match = tables.find((t) => t._id === selectedTable._id);
     if (!match) return;
@@ -61,7 +60,7 @@ export default function BookReservationPage() {
       table: match._id,
     }));
     setSelectedTable(null);
-  }, [tables, setSelectedTable]);
+  }, [selectedTable, tables, setSelectedTable]);
 
   const handleChange = (field: string, value: string | number) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -89,7 +88,7 @@ export default function BookReservationPage() {
     return tables
       .filter((table) => {
         const fitsParty = table.capacity >= partySizeNum;
-        const isAvailable = table.status === "available";
+        const isAvailable = table.status !== "maintenance" && table.isActive !== false;
         const matchesLocation = form.location ? table.location === form.location : true;
         const isReserved = reservedTableIds.has(table._id);
         return fitsParty && isAvailable && matchesLocation && !isReserved;
@@ -136,6 +135,7 @@ export default function BookReservationPage() {
       toast.success("Reservation requested successfully");
       setBooked(result);
       fetchAvailability(form.date);
+      fetchTables();
       setForm({
         customerName: "",
         contact: "",

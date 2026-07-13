@@ -72,7 +72,7 @@ export default function TablesPage() {
   }, [tables]);
 
   const handleBook = (table: Table) => {
-    if (table.status !== "available") return;
+    if (table.status === "maintenance") return;
     setSelectedTable(table);
     router.push("/reservations");
   };
@@ -214,7 +214,7 @@ export default function TablesPage() {
                             stagger={0.05}
                           >
                             {sectionTables.map((table) => {
-                              const canBook = table.status === "available";
+                              const canBook = table.status !== "maintenance";
                               return (
                                 <StaggerItem key={table._id}>
                                   <button

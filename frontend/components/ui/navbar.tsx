@@ -81,7 +81,12 @@ export function Navbar() {
               Sign out
             </Button>
           ) : (
-            <Button asChild variant="default" size="sm" className="rounded-full px-5">
+            <Button
+              asChild
+              variant="default"
+              size="sm"
+              className="rounded-full px-5"
+            >
               <Link href="/admin/login">Admin</Link>
             </Button>
           )}
@@ -92,7 +97,11 @@ export function Navbar() {
           onClick={() => setMobileOpen((v) => !v)}
           aria-label="Toggle menu"
         >
-          {mobileOpen ? <X className="size-5" strokeWidth={1.5} /> : <Menu className="size-5" strokeWidth={1.5} />}
+          {mobileOpen ? (
+            <X className="size-5" strokeWidth={1.5} />
+          ) : (
+            <Menu className="size-5" strokeWidth={1.5} />
+          )}
         </button>
       </div>
 
@@ -130,7 +139,9 @@ export function Navbar() {
             )}
             <div className="mt-3 flex items-center justify-between border-t border-foreground/5 pt-4">
               {isAuthenticated && user ? (
-                <Button variant="ghost" size="sm" onClick={logout}>Sign out</Button>
+                <Button variant="ghost" size="sm" onClick={logout}>
+                  Sign out
+                </Button>
               ) : (
                 <Button asChild variant="default" size="sm">
                   <Link href="/admin/login">Admin</Link>

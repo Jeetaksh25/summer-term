@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BarChart,
@@ -19,25 +19,45 @@ import { useFunctionStore } from "@/store/functionStore";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import type { Table, Reservation, WaitlistEntry, WaitlistStatus } from "@/types";
-import { motion, useInView, useSpring, useMotionValueEvent } from "motion/react";
-import { AnimatedSection, StaggerContainer, StaggerItem } from "@/components/ui/animated-section";
+import type {
+  Table,
+  Reservation,
+  WaitlistEntry,
+  WaitlistStatus,
+} from "@/types";
 
 const CHART_TERRACOTTA = "#C65D3B";
 const CHART_CHARCOAL = "#1A1A1A";
 const CHART_AMBER = "#D9A95F";
 const CHART_SAGE = "#7A8B6F";
 
-const reservationStatusOrder = ["confirmed", "seated", "completed", "cancelled", "no-show"] as const;
-const waitlistStatusOrder = ["waiting", "notified", "seated", "cancelled", "expired"] as const;
+const reservationStatusOrder = [
+  "confirmed",
+  "seated",
+  "completed",
+  "cancelled",
+  "no-show",
+] as const;
 
 const statusColors: Record<string, string> = {
   confirmed: "bg-emerald-100 text-emerald-800",
@@ -84,7 +104,9 @@ export default function AdminDashboardPage() {
   } = useFunctionStore();
 
   const [tab, setTab] = useState<Tab>("tables");
-  const [tableForm, setTableForm] = useState<Omit<Table, "_id" | "createdAt" | "updatedAt">>({
+  const [tableForm, setTableForm] = useState<
+    Omit<Table, "_id" | "createdAt" | "updatedAt">
+  >({
     tableNumber: "",
     capacity: 1,
     location: "indoor",
@@ -110,37 +132,57 @@ export default function AdminDashboardPage() {
     fetchWaitlist();
   }, [isAuthenticated, fetchTables, fetchReservations, fetchWaitlist]);
 
+  const activeReservations = useMemo(
+    () =>
+      reservations.filter(
+        (r) => r.status === "confirmed" || r.status === "seated"
+      ),
+    [reservations]
+  );
+
   const reservationHourData = useMemo(() => {
     const counts = new Map<string, number>();
-    reservations.forEach((r) => {
+    activeReservations.forEach((r) => {
       const hour = r.startTime.slice(0, 2) || "--";
       counts.set(hour, (counts.get(hour) || 0) + 1);
     });
-    const sorted = Array.from(counts.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    const sorted = Array.from(counts.entries()).sort((a, b) =>
+      a[0].localeCompare(b[0])
+    );
     return sorted.map(([hour, count]) => ({ hour, count }));
-  }, [reservations]);
+  }, [activeReservations]);
 
   const tableStatusData = useMemo(() => {
     const counts = new Map<string, number>();
     tables.forEach((t) => {
       counts.set(t.status, (counts.get(t.status) || 0) + 1);
     });
-    return ["available", "occupied", "reserved", "maintenance"].map((status) => ({
-      name: status,
-      value: counts.get(status) || 0,
-    }));
+    return ["available", "occupied", "reserved", "maintenance"].map(
+      (status) => ({
+        name: status,
+        value: counts.get(status) || 0,
+      })
+    );
   }, [tables]);
+
+  const activeWaitlist = useMemo(
+    () =>
+      waitlist.filter(
+        (w) => w.status === "waiting" || w.status === "notified"
+      ),
+    [waitlist]
+  );
 
   const waitlistStatusData = useMemo(() => {
     const counts = new Map<string, number>();
-    waitlist.forEach((w) => {
+    activeWaitlist.forEach((w) => {
       counts.set(w.status, (counts.get(w.status) || 0) + 1);
     });
-    return waitlistStatusOrder.map((status) => ({
+    return ["waiting", "notified"].map((status) => ({
       name: status,
       value: counts.get(status) || 0,
     }));
-  }, [waitlist]);
+  }, [activeWaitlist]);
 
   const occupancyRate = useMemo(() => {
     const activeTables = tables.filter((t) => t.isActive);
@@ -157,7 +199,13 @@ export default function AdminDashboardPage() {
     if (result) {
       toast.success("Table added");
       await fetchTables();
-      setTableForm({ tableNumber: "", capacity: 1, location: "indoor", status: "available", isActive: true });
+      setTableForm({
+        tableNumber: "",
+        capacity: 1,
+        location: "indoor",
+        status: "available",
+        isActive: true,
+      });
     } else {
       toast.error(errors.mutation || "Failed to add table");
     }
@@ -187,27 +235,43 @@ export default function AdminDashboardPage() {
   };
 
   const handleUpdateReservationStatus = async (id: string, status: string) => {
-    const result = await updateReservation(id, { status: status as Reservation["status"] });
-    if (result) toast.success("Reservation updated");
-    else toast.error(errors.mutation || "Failed to update reservation");
+    const result = await updateReservation(id, {
+      status: status as Reservation["status"],
+    });
+    if (result) {
+      toast.success("Reservation updated");
+      await fetchReservations();
+      await fetchTables();
+    } else toast.error(errors.mutation || "Failed to update reservation");
   };
 
   const handleCancelReservation = async (id: string) => {
     const result = await cancelReservation(id);
-    if (result) toast.success("Reservation cancelled");
-    else toast.error(errors.mutation || "Failed to cancel reservation");
+    if (result) {
+      toast.success("Reservation cancelled");
+      await fetchReservations();
+      await fetchTables();
+    } else toast.error(errors.mutation || "Failed to cancel reservation");
   };
 
   const handleSeatWaitlist = async (id: string) => {
-    const result = await seatWaitlistEntry(id, { status: "seated" as WaitlistStatus });
-    if (result) toast.success("Waitlist entry seated");
-    else toast.error(errors.mutation || "Failed to seat entry");
+    const result = await seatWaitlistEntry(id, {
+      status: "seated" as WaitlistStatus,
+    });
+    if (result) {
+      toast.success("Waitlist entry seated");
+      await fetchReservations();
+      await fetchTables();
+      await fetchWaitlist();
+    } else toast.error(errors.mutation || "Failed to seat entry");
   };
 
   const handleCancelWaitlist = async (id: string) => {
     const result = await cancelWaitlistEntry(id);
-    if (result) toast.success("Waitlist entry cancelled");
-    else toast.error(errors.mutation || "Failed to cancel entry");
+    if (result) {
+      toast.success("Waitlist entry cancelled");
+      await fetchWaitlist();
+    } else toast.error(errors.mutation || "Failed to cancel entry");
   };
 
   if (loading.auth || !isAuthenticated || !user) {
@@ -232,45 +296,42 @@ export default function AdminDashboardPage() {
 
       <Container className="pb-20">
         {errors.mutation && (
-          <AnimatedSection className="mb-6 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+          <div className="mb-6 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
             {errors.mutation}
-            <button onClick={() => clearError("mutation")} className="ml-2 underline">Dismiss</button>
-          </AnimatedSection>
+            <button
+              onClick={() => clearError("mutation")}
+              className="ml-2 underline"
+            >
+              Dismiss
+            </button>
+          </div>
         )}
 
-        <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" stagger={0.06}>
-          <StaggerItem>
-            <StatCard
-              icon={<Armchair className="size-5" strokeWidth={1.5} />}
-              label="Total tables"
-              value={tables.length}
-            />
-          </StaggerItem>
-          <StaggerItem>
-            <StatCard
-              icon={<Calendar className="size-5" strokeWidth={1.5} />}
-              label="Today's reservations"
-              value={reservations.length}
-            />
-          </StaggerItem>
-          <StaggerItem>
-            <StatCard
-              icon={<Users className="size-5" strokeWidth={1.5} />}
-              label="Waitlist"
-              value={waitlist.length}
-            />
-          </StaggerItem>
-          <StaggerItem>
-            <StatCard
-              icon={<RefreshCw className="size-5" strokeWidth={1.5} />}
-              label="Occupancy"
-              value={occupancyRate}
-              suffix="%"
-            />
-          </StaggerItem>
-        </StaggerContainer>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            icon={<Armchair className="size-5" strokeWidth={1.5} />}
+            label="Total tables"
+            value={tables.length}
+          />
+          <StatCard
+            icon={<Calendar className="size-5" strokeWidth={1.5} />}
+            label="Today's reservations"
+            value={activeReservations.length}
+          />
+          <StatCard
+            icon={<Users className="size-5" strokeWidth={1.5} />}
+            label="Waitlist"
+            value={activeWaitlist.length}
+          />
+          <StatCard
+            icon={<RefreshCw className="size-5" strokeWidth={1.5} />}
+            label="Occupancy"
+            value={occupancyRate}
+            suffix="%"
+          />
+        </div>
 
-        <AnimatedSection delay={0.2} className="mt-8 grid gap-4 lg:grid-cols-2">
+        <div className="mt-8 grid gap-4 lg:grid-cols-2">
           <Card className="min-h-[320px]">
             <CardHeader>
               <CardTitle>Reservations by hour</CardTitle>
@@ -280,8 +341,16 @@ export default function AdminDashboardPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={reservationHourData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="hour" stroke="var(--muted-foreground)" fontSize={12} />
-                  <YAxis stroke="var(--muted-foreground)" fontSize={12} allowDecimals={false} />
+                  <XAxis
+                    dataKey="hour"
+                    stroke="var(--muted-foreground)"
+                    fontSize={12}
+                  />
+                  <YAxis
+                    stroke="var(--muted-foreground)"
+                    fontSize={12}
+                    allowDecimals={false}
+                  />
                   <Tooltip
                     contentStyle={{
                       borderRadius: "12px",
@@ -291,7 +360,11 @@ export default function AdminDashboardPage() {
                     labelStyle={{ color: "var(--foreground)" }}
                     itemStyle={{ color: "var(--foreground)" }}
                   />
-                  <Bar dataKey="count" fill={CHART_TERRACOTTA} radius={[6, 6, 0, 0]} />
+                  <Bar
+                    dataKey="count"
+                    fill={CHART_TERRACOTTA}
+                    radius={[6, 6, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -300,7 +373,9 @@ export default function AdminDashboardPage() {
           <Card className="min-h-[320px]">
             <CardHeader>
               <CardTitle>Table status</CardTitle>
-              <CardDescription>Live distribution across the floor</CardDescription>
+              <CardDescription>
+                Live distribution across the floor
+              </CardDescription>
             </CardHeader>
             <CardContent className="h-[240px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -316,7 +391,17 @@ export default function AdminDashboardPage() {
                     paddingAngle={4}
                   >
                     {tableStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={[CHART_TERRACOTTA, CHART_SAGE, CHART_AMBER, CHART_CHARCOAL][index % 4]} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={
+                          [
+                            CHART_TERRACOTTA,
+                            CHART_SAGE,
+                            CHART_AMBER,
+                            CHART_CHARCOAL,
+                          ][index % 4]
+                        }
+                      />
                     ))}
                   </Pie>
                   <Tooltip
@@ -332,37 +417,62 @@ export default function AdminDashboardPage() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </AnimatedSection>
+        </div>
 
-        <AnimatedSection delay={0.3} className="mt-8">
+        <div className="mt-8">
           <Card className="min-h-[260px]">
             <CardHeader>
               <CardTitle>Waitlist status</CardTitle>
               <CardDescription>Where guests are in the queue</CardDescription>
             </CardHeader>
             <CardContent className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={waitlistStatusData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} />
-                  <YAxis stroke="var(--muted-foreground)" fontSize={12} allowDecimals={false} />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: "12px",
-                      border: "1px solid var(--border)",
-                      background: "var(--card)",
-                    }}
-                    labelStyle={{ color: "var(--foreground)" }}
-                    itemStyle={{ color: "var(--foreground)" }}
-                  />
-                  <Bar dataKey="value" fill={CHART_CHARCOAL} radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {activeWaitlist.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  No waitlist entries to show
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={waitlistStatusData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis
+                      dataKey="name"
+                      stroke="var(--muted-foreground)"
+                      fontSize={12}
+                    />
+                    <YAxis
+                      stroke="var(--muted-foreground)"
+                      fontSize={12}
+                      allowDecimals={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: "12px",
+                        border: "1px solid var(--border)",
+                        background: "var(--card)",
+                      }}
+                      labelStyle={{ color: "var(--foreground)" }}
+                      itemStyle={{ color: "var(--foreground)" }}
+                    />
+                    <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                      {waitlistStatusData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={
+                            entry.name === "waiting"
+                              ? CHART_AMBER
+                              : CHART_SAGE
+                          }
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
-        </AnimatedSection>
+        </div>
 
-        <AnimatedSection delay={0.4} className="mt-10">
+        <div className="mt-10">
           <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
             <TabsList className="mb-6">
               {(["tables", "reservations", "waitlist"] as Tab[]).map((t) => (
@@ -378,10 +488,15 @@ export default function AdminDashboardPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Add table</CardTitle>
-                  <CardDescription>Create a new table for guests to book</CardDescription>
+                  <CardDescription>
+                    Create a new table for guests to book
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleCreateTable} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                  <form
+                    onSubmit={handleCreateTable}
+                    className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"
+                  >
                     <div className="space-y-2">
                       <Label htmlFor="tableNumber">Number</Label>
                       <Input
@@ -390,7 +505,12 @@ export default function AdminDashboardPage() {
                         placeholder="A1"
                         required
                         value={tableForm.tableNumber}
-                        onChange={(e) => setTableForm({ ...tableForm, tableNumber: e.target.value })}
+                        onChange={(e) =>
+                          setTableForm({
+                            ...tableForm,
+                            tableNumber: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
@@ -401,18 +521,28 @@ export default function AdminDashboardPage() {
                         min={1}
                         required
                         value={tableForm.capacity}
-                        onChange={(e) => setTableForm({ ...tableForm, capacity: Number(e.target.value) })}
+                        onChange={(e) =>
+                          setTableForm({
+                            ...tableForm,
+                            capacity: Number(e.target.value),
+                          })
+                        }
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="location">Location</Label>
                       <Select
                         value={tableForm.location}
-                        onValueChange={(value) => setTableForm({ ...tableForm, location: value })}
+                        onValueChange={(value) =>
+                          setTableForm({ ...tableForm, location: value })
+                        }
                       >
                         <SelectTrigger id="location" aria-label="Location">
                           <SelectValue placeholder="Select location">
-                            {tableForm.location ? tableForm.location.charAt(0).toUpperCase() + tableForm.location.slice(1) : "Select location"}
+                            {tableForm.location
+                              ? tableForm.location.charAt(0).toUpperCase() +
+                                tableForm.location.slice(1)
+                              : "Select location"}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
@@ -426,23 +556,39 @@ export default function AdminDashboardPage() {
                       <Label htmlFor="status">Status</Label>
                       <Select
                         value={tableForm.status}
-                        onValueChange={(value) => setTableForm({ ...tableForm, status: value as Table["status"] })}
+                        onValueChange={(value) =>
+                          setTableForm({
+                            ...tableForm,
+                            status: value as Table["status"],
+                          })
+                        }
                       >
                         <SelectTrigger id="status" aria-label="Status">
                           <SelectValue placeholder="Select status">
-                            {tableForm.status ? tableForm.status.charAt(0).toUpperCase() + tableForm.status.slice(1) : "Select status"}
+                            {tableForm.status
+                              ? tableForm.status.charAt(0).toUpperCase() +
+                                tableForm.status.slice(1)
+                              : "Select status"}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="available">Available</SelectItem>
                           <SelectItem value="occupied">Occupied</SelectItem>
                           <SelectItem value="reserved">Reserved</SelectItem>
-                          <SelectItem value="maintenance">Maintenance</SelectItem>
+                          <SelectItem value="maintenance">
+                            Maintenance
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="flex items-end">
-                      <Button type="submit" disabled={loading.mutation} className="w-full">Add table</Button>
+                      <Button
+                        type="submit"
+                        disabled={loading.mutation}
+                        className="w-full"
+                      >
+                        Add table
+                      </Button>
                     </div>
                   </form>
                 </CardContent>
@@ -451,7 +597,12 @@ export default function AdminDashboardPage() {
               {errors.tables && (
                 <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
                   {errors.tables}
-                  <button onClick={() => clearError("tables")} className="ml-2 underline">Dismiss</button>
+                  <button
+                    onClick={() => clearError("tables")}
+                    className="ml-2 underline"
+                  >
+                    Dismiss
+                  </button>
                 </div>
               )}
 
@@ -462,40 +613,92 @@ export default function AdminDashboardPage() {
                       <CardHeader className="flex flex-row items-start justify-between">
                         <div>
                           <CardTitle>Table {table.tableNumber}</CardTitle>
-                          <CardDescription className="mt-1 capitalize">{table.location}</CardDescription>
+                          <CardDescription className="mt-1 capitalize">
+                            {table.location}
+                          </CardDescription>
                         </div>
-                        <Badge variant={table.status === "available" ? "success" : table.status === "maintenance" ? "warning" : "default"}>
+                        <Badge
+                          variant={
+                            table.status === "available"
+                              ? "success"
+                              : table.status === "maintenance"
+                                ? "warning"
+                                : "default"
+                          }
+                        >
                           {table.status}
                         </Badge>
                       </CardHeader>
                       <CardContent>
                         {editingTable?._id === table._id ? (
-                          <form onSubmit={handleUpdateTable} className="space-y-3">
+                          <form
+                            onSubmit={handleUpdateTable}
+                            className="space-y-3"
+                          >
                             <Input
                               type="text"
                               value={editingTable.tableNumber}
-                              onChange={(e) => setEditingTable({ ...editingTable, tableNumber: e.target.value })}
+                              onChange={(e) =>
+                                setEditingTable({
+                                  ...editingTable,
+                                  tableNumber: e.target.value,
+                                })
+                              }
                             />
                             <Input
                               type="number"
                               min={1}
                               value={editingTable.capacity}
-                              onChange={(e) => setEditingTable({ ...editingTable, capacity: Number(e.target.value) })}
+                              onChange={(e) =>
+                                setEditingTable({
+                                  ...editingTable,
+                                  capacity: Number(e.target.value),
+                                })
+                              }
                             />
                             <div className="flex gap-2">
-                              <Button type="submit" size="sm" disabled={loading.mutation}>Save</Button>
-                              <Button type="button" size="sm" variant="outline" onClick={() => setEditingTable(null)}>Cancel</Button>
+                              <Button
+                                type="submit"
+                                size="sm"
+                                disabled={loading.mutation}
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingTable(null)}
+                              >
+                                Cancel
+                              </Button>
                             </div>
                           </form>
                         ) : (
                           <>
                             <div className="flex items-baseline gap-2">
-                              <span className="font-display text-3xl font-semibold">{table.capacity}</span>
-                              <span className="text-sm text-muted-foreground">guests</span>
+                              <span className="font-display text-3xl font-semibold">
+                                {table.capacity}
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                guests
+                              </span>
                             </div>
                             <div className="mt-4 flex gap-2">
-                              <Button size="sm" variant="outline" onClick={() => setEditingTable(table)}>Edit</Button>
-                              <Button size="sm" variant="destructive" onClick={() => handleDeleteTable(table._id)}>Delete</Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingTable(table)}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDeleteTable(table._id)}
+                              >
+                                Delete
+                              </Button>
                             </div>
                           </>
                         )}
@@ -519,8 +722,19 @@ export default function AdminDashboardPage() {
                   }}
                   className="w-auto"
                 />
-                <Button variant="outline" onClick={() => fetchReservations()} disabled={loading.reservations} className="gap-2">
-                  <RefreshCw className={cn("size-4", loading.reservations && "animate-spin")} strokeWidth={1.5} />
+                <Button
+                  variant="outline"
+                  onClick={() => fetchReservations()}
+                  disabled={loading.reservations}
+                  className="gap-2"
+                >
+                  <RefreshCw
+                    className={cn(
+                      "size-4",
+                      loading.reservations && "animate-spin"
+                    )}
+                    strokeWidth={1.5}
+                  />
                   Refresh
                 </Button>
               </div>
@@ -528,82 +742,97 @@ export default function AdminDashboardPage() {
               {errors.reservations && (
                 <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
                   {errors.reservations}
-                  <button onClick={() => clearError("reservations")} className="ml-2 underline">Dismiss</button>
+                  <button
+                    onClick={() => clearError("reservations")}
+                    className="ml-2 underline"
+                  >
+                    Dismiss
+                  </button>
                 </div>
               )}
 
-              <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" stagger={0.05}>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {reservations.map((r) => (
-                  <StaggerItem key={r._id}>
-                    <ReservationCard
-                      reservation={r}
-                      onStatusChange={handleUpdateReservationStatus}
-                      onCancel={handleCancelReservation}
-                    />
-                  </StaggerItem>
+                  <ReservationCard
+                    key={r._id}
+                    reservation={r}
+                    onStatusChange={handleUpdateReservationStatus}
+                    onCancel={handleCancelReservation}
+                  />
                 ))}
-              </StaggerContainer>
+              </div>
 
               {reservations.length === 0 && !loading.reservations && (
-                <AnimatedSection className="rounded-2xl border bg-card p-12 text-center">
-                  <p className="text-muted-foreground">No reservations for this date.</p>
-                </AnimatedSection>
+                <div className="rounded-2xl border bg-card p-12 text-center">
+                  <p className="text-muted-foreground">
+                    No reservations for this date.
+                  </p>
+                </div>
               )}
             </div>
           )}
 
           {tab === "waitlist" && (
             <div className="space-y-4">
-              <Button variant="outline" onClick={() => fetchWaitlist()} disabled={loading.waitlist} className="gap-2">
-                <RefreshCw className={cn("size-4", loading.waitlist && "animate-spin")} strokeWidth={1.5} />
+              <Button
+                variant="outline"
+                onClick={() => fetchWaitlist()}
+                disabled={loading.waitlist}
+                className="gap-2"
+              >
+                <RefreshCw
+                  className={cn("size-4", loading.waitlist && "animate-spin")}
+                  strokeWidth={1.5}
+                />
                 Refresh
               </Button>
 
               {errors.waitlist && (
                 <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
                   {errors.waitlist}
-                  <button onClick={() => clearError("waitlist")} className="ml-2 underline">Dismiss</button>
+                  <button
+                    onClick={() => clearError("waitlist")}
+                    className="ml-2 underline"
+                  >
+                    Dismiss
+                  </button>
                 </div>
               )}
 
-              <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" stagger={0.05}>
-                {waitlist.map((entry) => (
-                  <StaggerItem key={entry._id}>
-                    <WaitlistCard entry={entry} onSeat={handleSeatWaitlist} onCancel={handleCancelWaitlist} />
-                  </StaggerItem>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {activeWaitlist.map((entry) => (
+                  <WaitlistCard
+                    key={entry._id}
+                    entry={entry}
+                    onSeat={handleSeatWaitlist}
+                    onCancel={handleCancelWaitlist}
+                  />
                 ))}
-              </StaggerContainer>
+              </div>
 
-              {waitlist.length === 0 && !loading.waitlist && (
-                <AnimatedSection className="rounded-2xl border bg-card p-12 text-center">
+              {activeWaitlist.length === 0 && !loading.waitlist && (
+                <div className="rounded-2xl border bg-card p-12 text-center">
                   <p className="text-muted-foreground">No waitlist entries.</p>
-                </AnimatedSection>
+                </div>
               )}
             </div>
           )}
-        </AnimatedSection>
+        </div>
       </Container>
     </>
   );
 }
 
-function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
-  const spring = useSpring(0, { stiffness: 60, damping: 20 });
-  const [display, setDisplay] = useState(0);
-
-  useEffect(() => {
-    if (isInView) spring.set(value);
-  }, [isInView, value, spring]);
-
-  useMotionValueEvent(spring, "change", (latest) => {
-    setDisplay(Math.round(latest));
-  });
-
+function AnimatedNumber({
+  value,
+  suffix = "",
+}: {
+  value: number;
+  suffix?: string;
+}) {
   return (
-    <span ref={ref}>
-      {display}
+    <span>
+      {value}
       {suffix}
     </span>
   );
@@ -627,7 +856,9 @@ function StatCard({
           {icon}
         </div>
         <div>
-          <p className="text-xs font-mono uppercase tracking-wide text-muted-foreground">{label}</p>
+          <p className="text-xs font-mono uppercase tracking-wide text-muted-foreground">
+            {label}
+          </p>
           <p className="font-display text-3xl font-semibold tracking-tight">
             <AnimatedNumber value={value} suffix={suffix} />
           </p>
@@ -646,30 +877,58 @@ function ReservationCard({
   onStatusChange: (id: string, status: string) => void;
   onCancel: (id: string) => void;
 }) {
-  const table = typeof reservation.table === "string" ? null : reservation.table;
+  const table =
+    typeof reservation.table === "string" ? null : reservation.table;
 
   return (
     <Card className="h-full">
       <CardHeader className="flex flex-row items-start justify-between">
         <div>
-          <CardTitle className="text-base">{reservation.customerName}</CardTitle>
-          <CardDescription className="mt-1">{reservation.contact}</CardDescription>
+          <CardTitle className="text-base">
+            {reservation.customerName}
+          </CardTitle>
+          <CardDescription className="mt-1">
+            {reservation.contact}
+          </CardDescription>
         </div>
-        <Badge variant={reservationStatusOrder.includes(reservation.status as typeof reservationStatusOrder[number]) ? (reservation.status === "confirmed" ? "success" : reservation.status === "cancelled" ? "destructive" : "default") : "outline"}>
+        <Badge
+          variant={
+            reservationStatusOrder.includes(
+              reservation.status as (typeof reservationStatusOrder)[number]
+            )
+              ? reservation.status === "confirmed"
+                ? "success"
+                : reservation.status === "cancelled"
+                  ? "destructive"
+                  : "default"
+              : "outline"
+          }
+        >
           {reservation.status}
         </Badge>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">{reservation.date}</span> · {reservation.startTime}–{reservation.endTime} · Party of {reservation.partySize}
+          <span className="font-medium text-foreground">
+            {reservation.date}
+          </span>{" "}
+          · {reservation.startTime}–{reservation.endTime} · Party of{" "}
+          {reservation.partySize}
         </div>
-        {table && <p className="text-sm text-muted-foreground">Table {table.tableNumber}</p>}
+        {table && (
+          <p className="text-sm text-muted-foreground">
+            Table {table.tableNumber}
+          </p>
+        )}
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <Select
             value={reservation.status}
             onValueChange={(value) => onStatusChange(reservation._id, value)}
           >
-            <SelectTrigger className="w-auto min-w-[140px]" aria-label="Reservation status">
+            <SelectTrigger
+              className="w-auto min-w-[140px]"
+              aria-label="Reservation status"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -679,7 +938,13 @@ function ReservationCard({
               <SelectItem value="no-show">No-show</SelectItem>
             </SelectContent>
           </Select>
-          <Button size="sm" variant="destructive" onClick={() => onCancel(reservation._id)}>Cancel</Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => onCancel(reservation._id)}
+          >
+            Cancel
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -695,7 +960,8 @@ function WaitlistCard({
   onSeat: (id: string) => void;
   onCancel: (id: string) => void;
 }) {
-  const table = typeof entry.table === "string" || !entry.table ? null : entry.table;
+  const table =
+    typeof entry.table === "string" || !entry.table ? null : entry.table;
 
   return (
     <Card className="h-full">
@@ -704,18 +970,41 @@ function WaitlistCard({
           <CardTitle className="text-base">{entry.customerName}</CardTitle>
           <CardDescription className="mt-1">{entry.contact}</CardDescription>
         </div>
-        <Badge variant={entry.status === "waiting" ? "warning" : entry.status === "seated" ? "success" : "default"}>
+        <Badge
+          variant={
+            entry.status === "waiting"
+              ? "warning"
+              : entry.status === "seated"
+                ? "success"
+                : "default"
+          }
+        >
           {entry.status}
         </Badge>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">{entry.preferredDate}</span> at {entry.requestedTime} · Party of {entry.partySize}
+          <span className="font-medium text-foreground">
+            {entry.preferredDate}
+          </span>{" "}
+          at {entry.requestedTime} · Party of {entry.partySize}
         </div>
-        {table && <p className="text-sm text-muted-foreground">Table {table.tableNumber}</p>}
+        {table && (
+          <p className="text-sm text-muted-foreground">
+            Table {table.tableNumber}
+          </p>
+        )}
         <div className="flex gap-2 pt-1">
-          <Button size="sm" variant="outline" onClick={() => onSeat(entry._id)}>Seat</Button>
-          <Button size="sm" variant="destructive" onClick={() => onCancel(entry._id)}>Cancel</Button>
+          <Button size="sm" variant="outline" onClick={() => onSeat(entry._id)}>
+            Seat
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => onCancel(entry._id)}
+          >
+            Cancel
+          </Button>
         </div>
       </CardContent>
     </Card>

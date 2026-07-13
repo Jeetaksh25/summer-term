@@ -4,7 +4,7 @@ import * as React from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 import { cn } from "@/lib/utils";
 
-const spring = { type: "spring", stiffness: 80, damping: 20, mass: 1 };
+const spring = { type: "spring", stiffness: 80, damping: 20, mass: 1 } as const;
 
 export function AnimatedSection({
   children,
@@ -163,7 +163,8 @@ export function SplitText({
               },
             }}
           >
-            {word}<span className="inline-block">&nbsp;</span>
+            {word}
+            <span className="inline-block">&nbsp;</span>
           </motion.span>
         </span>
       ))}
@@ -198,7 +199,11 @@ export function ClipImage({
         initial={{ scale: 1.15 }}
         whileInView={{ scale: 1 }}
         viewport={{ once: true, amount: 0.3 }}
-        transition={{ duration: 1.4, delay: delay + 0.1, ease: [0.17, 1, 0.27, 1] }}
+        transition={{
+          duration: 1.4,
+          delay: delay + 0.1,
+          ease: [0.17, 1, 0.27, 1],
+        }}
       />
     </motion.div>
   );
@@ -222,11 +227,15 @@ export function ParallaxImage({
   });
   const y = useTransform(scrollYProgress, [0, 1], ["0%", `${speed * 100}%`]);
   return (
-    <div ref={ref} className={cn("overflow-hidden", className)}>
+    <div
+      ref={ref}
+      className={cn("overflow-hidden", className)}
+      style={{ transform: "translateZ(0)", borderRadius: "2rem" }}
+    >
       <motion.img
         src={src}
         alt={alt}
-        style={{ y }}
+        style={{ y, borderRadius: "inherit" }}
         className="h-[115%] w-full object-cover"
       />
     </div>

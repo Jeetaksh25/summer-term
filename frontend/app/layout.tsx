@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/ui/navbar";
 import { Footer } from "@/components/ui/footer";
 import { Providers } from "@/components/providers";
+import Logo from "@/public/Logo1.png";
 
 const sans = Sen({
   variable: "--font-sans",
@@ -51,7 +52,15 @@ export default function RootLayout({
         mono.variable,
         display.variable
       )}
+      suppressHydrationWarning
+      style={{
+        scrollBehavior: "smooth",
+      }}
     >
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+      <link rel="icon" href={Logo.src} />
+
       <body className="min-h-full flex flex-col">
         <Providers>
           <Navbar />
