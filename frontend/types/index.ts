@@ -4,14 +4,12 @@ export interface PopulatedTable {
   capacity: number;
 }
 
-export interface UserSchema {
+export interface User {
   _id: string;
   email: string;
-  password: string;
   name: string;
   role: "admin" | "owner" | "staff";
 }
-
 
 export interface Table {
   _id: string;

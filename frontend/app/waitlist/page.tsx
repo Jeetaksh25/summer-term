@@ -1,65 +1,138 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState } from "react";
 import { useFunctionStore } from "@/store/functionStore";
+import { Button } from "@/components/ui/button";
+import { Container } from "@/components/ui/container";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { AnimatedSection } from "@/components/ui/animated-section";
 
-export default function WaitlistPage() {
-  const { waitlist, loading, errors, fetchWaitlist, clearError } = useFunctionStore();
+export default function JoinWaitlistPage() {
+  const { loading, errors, addToWaitlist, clearError } = useFunctionStore();
 
-  useEffect(() => {
-    fetchWaitlist();
-  }, [fetchWaitlist]);
+  const [form, setForm] = useState({
+    customerName: "",
+    contact: "",
+    partySize: 1,
+    preferredDate: new Date().toISOString().split("T")[0],
+    requestedTime: "",
+  });
+
+  const handleChange = (field: string, value: string | number) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    clearError("mutation");
+    const result = await addToWaitlist({
+      ...form,
+      partySize: Number(form.partySize),
+    });
+    if (result) {
+      toast.success("Added to waitlist");
+      setForm({
+        customerName: "",
+        contact: "",
+        partySize: 1,
+        preferredDate: new Date().toISOString().split("T")[0],
+        requestedTime: "",
+      });
+    } else {
+      toast.error(errors.mutation || "Failed to join waitlist");
+    }
+  };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Waitlist</h1>
-        <button
-          onClick={() => fetchWaitlist()}
-          className="rounded-md border px-3 py-1.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900"
-          disabled={loading.waitlist}
-        >
-          {loading.waitlist ? "Loading…" : "Refresh"}
-        </button>
-      </div>
+    <>
+      <PageHeader
+        title="Join the waitlist"
+        description="When a table opens up, we will reach out to you in order."
+      />
 
-      {errors.waitlist && (
-        <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">
-          {errors.waitlist}
-          <button
-            onClick={() => clearError("waitlist")}
-            className="ml-2 underline"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
+      <Container className="pb-20">
+        <AnimatedSection className="mx-auto max-w-2xl">
+          <Card>
+            <CardContent className="p-6 md:p-8">
+              {errors.mutation && (
+                <div className="mb-6 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+                  {errors.mutation}
+                  <button onClick={() => clearError("mutation")} className="ml-2 underline">Dismiss</button>
+                </div>
+              )}
 
-      <div className="mt-6">
-        {waitlist.length === 0 ? (
-          <p className="text-muted-foreground">
-            No waitlist entries. Add one to get started.
-          </p>
-        ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {waitlist.map((entry) => (
-              <li
-                key={entry._id}
-                className="rounded-lg border bg-white p-4 dark:bg-black"
-              >
-                <p className="font-medium">{entry.customerName}</p>
-                <p className="text-sm text-muted-foreground">
-                  {entry.preferredDate} at {entry.requestedTime} · Party of{" "}
-                  {entry.partySize}
-                </p>
-                <p className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">
-                  {entry.status} · Priority {entry.priority}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="customerName">Name</Label>
+                    <Input
+                      id="customerName"
+                      type="text"
+                      required
+                      value={form.customerName}
+                      onChange={(e) => handleChange("customerName", e.target.value)}
+                      placeholder="Your full name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contact">Phone or email</Label>
+                    <Input
+                      id="contact"
+                      type="text"
+                      required
+                      value={form.contact}
+                      onChange={(e) => handleChange("contact", e.target.value)}
+                      placeholder="How we reach you"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-5 sm:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="partySize">Party size</Label>
+                    <Input
+                      id="partySize"
+                      type="number"
+                      min={1}
+                      required
+                      value={form.partySize}
+                      onChange={(e) => handleChange("partySize", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="preferredDate">Preferred date</Label>
+                    <Input
+                      id="preferredDate"
+                      type="date"
+                      required
+                      value={form.preferredDate}
+                      onChange={(e) => handleChange("preferredDate", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="requestedTime">Preferred time</Label>
+                    <Input
+                      id="requestedTime"
+                      type="time"
+                      required
+                      value={form.requestedTime}
+                      onChange={(e) => handleChange("requestedTime", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <Button type="submit" disabled={loading.mutation} className="w-full">
+                  {loading.mutation ? "Joining…" : "Join waitlist"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </AnimatedSection>
+      </Container>
+    </>
   );
 }

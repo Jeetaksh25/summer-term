@@ -1,81 +1,189 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useFunctionStore } from "@/store/functionStore";
+import { Button } from "@/components/ui/button";
+import { Container } from "@/components/ui/container";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input, Select, Textarea } from "@/components/ui/input";
+import { toast } from "sonner";
+import { AnimatedSection } from "@/components/ui/animated-section";
 
-export default function ReservationsPage() {
-  const {
-    reservations,
-    loading,
-    errors,
-    selectedDate,
-    fetchReservations,
-    setSelectedDate,
-    clearError,
-  } = useFunctionStore();
+export default function BookReservationPage() {
+  const { tables, loading, errors, fetchTables, createReservation, clearError } = useFunctionStore();
+
+  const [form, setForm] = useState({
+    customerName: "",
+    contact: "",
+    partySize: 1,
+    table: "",
+    date: new Date().toISOString().split("T")[0],
+    startTime: "",
+    endTime: "",
+    notes: "",
+  });
 
   useEffect(() => {
-    fetchReservations(selectedDate);
-  }, [selectedDate, fetchReservations]);
+    fetchTables();
+  }, [fetchTables]);
+
+  const handleChange = (field: string, value: string | number) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    clearError("mutation");
+    const result = await createReservation({
+      ...form,
+      partySize: Number(form.partySize),
+      table: form.table,
+    });
+    if (result) {
+      toast.success("Reservation requested successfully");
+      setForm({
+        customerName: "",
+        contact: "",
+        partySize: 1,
+        table: "",
+        date: new Date().toISOString().split("T")[0],
+        startTime: "",
+        endTime: "",
+        notes: "",
+      });
+    } else {
+      toast.error(errors.mutation || "Failed to create reservation");
+    }
+  };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold">Reservations</h1>
-        <div className="flex items-center gap-3">
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="rounded-md border px-3 py-1.5 text-sm"
-          />
-          <button
-            onClick={() => fetchReservations(selectedDate)}
-            className="rounded-md border px-3 py-1.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900"
-            disabled={loading.reservations}
-          >
-            {loading.reservations ? "Loading…" : "Refresh"}
-          </button>
-        </div>
-      </div>
+    <>
+      <PageHeader
+        title="Book a table"
+        description="Reserve a table for your party. We will confirm your booking right away."
+      />
 
-      {errors.reservations && (
-        <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">
-          {errors.reservations}
-          <button
-            onClick={() => clearError("reservations")}
-            className="ml-2 underline"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
+      <Container className="pb-20">
+        <AnimatedSection className="mx-auto max-w-3xl">
+          <Card>
+            <CardContent className="p-6 md:p-8">
+              {errors.mutation && (
+                <div className="mb-6 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+                  {errors.mutation}
+                  <button onClick={() => clearError("mutation")} className="ml-2 underline">Dismiss</button>
+                </div>
+              )}
 
-      <div className="mt-6">
-        {reservations.length === 0 ? (
-          <p className="text-muted-foreground">
-            No reservations for {selectedDate}. Create one to get started.
-          </p>
-        ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {reservations.map((reservation) => (
-              <li
-                key={reservation._id}
-                className="rounded-lg border bg-white p-4 dark:bg-black"
-              >
-                <p className="font-medium">{reservation.customerName}</p>
-                <p className="text-sm text-muted-foreground">
-                  {reservation.startTime}–{reservation.endTime} · Party of{" "}
-                  {reservation.partySize}
-                </p>
-                <p className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">
-                  {reservation.status}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="customerName">Name</Label>
+                    <Input
+                      id="customerName"
+                      type="text"
+                      required
+                      value={form.customerName}
+                      onChange={(e) => handleChange("customerName", e.target.value)}
+                      placeholder="Your full name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contact">Phone or email</Label>
+                    <Input
+                      id="contact"
+                      type="text"
+                      required
+                      value={form.contact}
+                      onChange={(e) => handleChange("contact", e.target.value)}
+                      placeholder="How we reach you"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="partySize">Party size</Label>
+                    <Input
+                      id="partySize"
+                      type="number"
+                      min={1}
+                      required
+                      value={form.partySize}
+                      onChange={(e) => handleChange("partySize", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="table">Table</Label>
+                    <Select
+                      id="table"
+                      required
+                      value={form.table}
+                      onChange={(e) => handleChange("table", e.target.value)}
+                    >
+                      <option value="" disabled>Select a table</option>
+                      {tables.map((table) => (
+                        <option key={table._id} value={table._id}>
+                          Table {table.tableNumber} (Capacity {table.capactiy})
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid gap-5 sm:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="date">Date</Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      required
+                      value={form.date}
+                      onChange={(e) => handleChange("date", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="startTime">Start time</Label>
+                    <Input
+                      id="startTime"
+                      type="time"
+                      required
+                      value={form.startTime}
+                      onChange={(e) => handleChange("startTime", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="endTime">End time</Label>
+                    <Input
+                      id="endTime"
+                      type="time"
+                      required
+                      value={form.endTime}
+                      onChange={(e) => handleChange("endTime", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notes (optional)</Label>
+                  <Textarea
+                    id="notes"
+                    rows={3}
+                    value={form.notes}
+                    onChange={(e) => handleChange("notes", e.target.value)}
+                    placeholder="Allergies, special occasion, seating preference"
+                  />
+                </div>
+
+                <Button type="submit" disabled={loading.mutation} className="w-full">
+                  {loading.mutation ? "Booking…" : "Book table"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </AnimatedSection>
+      </Container>
+    </>
   );
 }

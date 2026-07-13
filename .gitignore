@@ -25,9 +25,16 @@ ARCHITECTURE.md
 FILES.md
 TASK.md
 FRONTEND.md
+DESIGN.md
 
 .agents/
 .claude/
 
 .mcp.json
 skills-lock.json
+
+.husky
+
+screenshots/
+screenshots.js
+debug-screenshot.js
