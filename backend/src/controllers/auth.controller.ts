@@ -44,7 +44,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
             return res.status(401).json({ message: "Invalid email or password" });
         }
 
-        const isMatch = await user.comparePassword(password);
+        const isMatch = await user.password.localeCompare(password);
         if (!isMatch) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
