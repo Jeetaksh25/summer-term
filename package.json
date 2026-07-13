@@ -11,8 +11,7 @@
     "frontend": "npm run dev --workspace frontend",
     "backend": "npm run dev --workspace backend",
     "build": "npm run build --workspace frontend",
-    "install:all": "npm install --workspaces",
-    "prepare": "husky"
+    "install:all": "npm install --workspaces"
   },
   "repository": {
     "type": "git",
