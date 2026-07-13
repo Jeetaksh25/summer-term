@@ -1,20 +1,34 @@
 import type { Metadata } from "next";
-import { Inter, Geist_Mono } from "next/font/google";
+import {
+  Inter,
+  Sen,
+  Playfair_Display,
+  Sarabun,
+  Chiron_GoRound_TC,
+  Sulphur_Point,
+} from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/ui/navbar";
 import { Footer } from "@/components/ui/footer";
 import { Providers } from "@/components/providers";
 
-const inter = Inter({
+const sans = Sen({
   variable: "--font-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
+const mono = Sulphur_Point({
   variable: "--font-mono",
   subsets: ["latin"],
+  weight: ["300", "400", "700"],
+});
+
+const display = Chiron_GoRound_TC({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -30,12 +44,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      suppressHydrationWarning
       className={cn(
         "h-full",
         "antialiased",
-        inter.variable,
-        geistMono.variable
+        sans.variable,
+        mono.variable,
+        display.variable
       )}
     >
       <body className="min-h-full flex flex-col">

@@ -8,7 +8,8 @@ import { Container } from "@/components/ui/container";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { AnimatedSection } from "@/components/ui/animated-section";
+import { AnimatedSection, SplitText } from "@/components/ui/animated-section";
+import { ArrowRight } from "lucide-react";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -32,23 +33,33 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <Container className="flex flex-1 items-center justify-center py-16">
+    <Container className="flex min-h-[calc(100vh-160px)] flex-col items-center justify-center py-16">
       <AnimatedSection className="w-full max-w-md">
-        <Card>
-          <CardHeader>
-            <CardTitle>Admin portal</CardTitle>
-            <CardDescription>Sign in to manage tables, reservations, and waitlist.</CardDescription>
+        <div className="mb-10 text-center">
+          <SplitText className="text-sm font-mono uppercase tracking-[0.22em] text-primary">
+            Staff access
+          </SplitText>
+          <h1 className="mt-4 font-display text-4xl font-semibold tracking-tight md:text-5xl">
+            Admin portal
+          </h1>
+        </div>
+        <Card className="overflow-hidden">
+          <CardHeader className="space-y-2 pb-2">
+            <CardTitle className="text-2xl font-semibold tracking-tight">Sign in</CardTitle>
+            <CardDescription className="text-base leading-relaxed">
+              Sign in to manage tables, reservations, and waitlist
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {errors.auth && (
-              <div className="mb-5 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+              <div className="mb-6 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
                 {errors.auth}
                 <button onClick={() => clearError("auth")} className="ml-2 underline">Dismiss</button>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2.5">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
@@ -60,7 +71,7 @@ export default function AdminLoginPage() {
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
@@ -72,8 +83,13 @@ export default function AdminLoginPage() {
                 />
               </div>
 
-              <Button type="submit" disabled={loading.auth} className="w-full">
+              <Button
+                type="submit"
+                disabled={loading.auth}
+                className="h-14 w-full gap-2 rounded-full text-base"
+              >
                 {loading.auth ? "Signing in…" : "Sign in"}
+                {!loading.auth && <ArrowRight className="size-5" strokeWidth={1.5} />}
               </Button>
             </form>
           </CardContent>

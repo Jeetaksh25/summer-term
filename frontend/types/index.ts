@@ -14,7 +14,7 @@ export interface User {
 export interface Table {
   _id: string;
   tableNumber: string;
-  capactiy: number;
+  capacity: number;
   location: "indoor" | "outdoor" | "balcony" | string;
   status: "available" | "occupied" | "reserved" | "maintenance";
   isActive: boolean;

@@ -6,12 +6,12 @@ const tableSchema = new mongoose.Schema({
         required: true,
         min: 1,
     },
-    capactiy:{
+    capacity: {
         type: Number,
         required: true,
         min: 1
     },
-    location:{
+    location: {
         type: String,
         default: "indoor"
     },
@@ -27,4 +27,4 @@ const tableSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 export const Table = mongoose.model("Table", tableSchema);
-export default Table
+export default Table;

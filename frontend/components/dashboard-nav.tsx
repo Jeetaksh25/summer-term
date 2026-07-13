@@ -28,18 +28,18 @@ export function DashboardNav() {
   };
 
   return (
-    <nav className="border-b bg-white dark:bg-black">
-      <div className="mx-auto flex h-14 max-w-5xl items-center gap-6 px-4">
-        <span className="font-semibold">DineFlow</span>
-        <ul className="flex flex-1 items-center gap-4">
+    <nav className="border-b border-foreground/5 bg-background">
+      <div className="mx-auto flex h-16 max-w-5xl items-center gap-6 px-6">
+        <span className="font-display text-lg font-semibold tracking-tight">DineFlow</span>
+        <ul className="flex flex-1 items-center gap-5">
           {links.map((link) => (
             <li key={link.href}>
               <Link
                 href={link.href}
                 className={cn(
-                  "text-sm transition-colors hover:text-foreground",
+                  "text-sm font-medium transition-colors hover:text-primary",
                   pathname === link.href
-                    ? "font-medium text-foreground"
+                    ? "text-foreground"
                     : "text-muted-foreground"
                 )}
               >
@@ -48,7 +48,7 @@ export function DashboardNav() {
             </li>
           ))}
         </ul>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           {isAuthenticated && user ? (
             <>
               <span className="hidden text-sm text-muted-foreground sm:inline">
@@ -57,9 +57,9 @@ export function DashboardNav() {
               <Link
                 href="/admin/dashboard"
                 className={cn(
-                  "text-sm transition-colors hover:text-foreground",
+                  "text-sm font-medium transition-colors hover:text-primary",
                   pathname === "/admin/dashboard"
-                    ? "font-medium text-foreground"
+                    ? "text-foreground"
                     : "text-muted-foreground"
                 )}
               >
@@ -67,7 +67,7 @@ export function DashboardNav() {
               </Link>
               <button
                 onClick={handleLogout}
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 Logout
               </button>
@@ -76,9 +76,9 @@ export function DashboardNav() {
             <Link
               href="/admin/login"
               className={cn(
-                "text-sm transition-colors hover:text-foreground",
+                "text-sm font-medium transition-colors hover:text-primary",
                 pathname === "/admin/login"
-                  ? "font-medium text-foreground"
+                  ? "text-foreground"
                   : "text-muted-foreground"
               )}
             >

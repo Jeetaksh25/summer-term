@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BarChart,
@@ -22,35 +22,36 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Input, Select } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Table, Reservation, WaitlistEntry, WaitlistStatus } from "@/types";
+import { motion, useInView, useSpring, useMotionValueEvent } from "motion/react";
 import { AnimatedSection, StaggerContainer, StaggerItem } from "@/components/ui/animated-section";
 
-const CHART_FOREST = "#2D4A3E";
-const CHART_MOSS = "#6B8E7B";
-const CHART_STEEL = "#6B6B6B";
-const CHART_TERRACOTTA = "#B54A3A";
-const CHART_AMBER = "#C9A227";
+const CHART_TERRACOTTA = "#C65D3B";
+const CHART_CHARCOAL = "#1A1A1A";
+const CHART_AMBER = "#D9A95F";
+const CHART_SAGE = "#7A8B6F";
 
 const reservationStatusOrder = ["confirmed", "seated", "completed", "cancelled", "no-show"] as const;
 const waitlistStatusOrder = ["waiting", "notified", "seated", "cancelled", "expired"] as const;
 
 const statusColors: Record<string, string> = {
-  confirmed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200",
-  seated: "bg-primary/15 text-primary dark:bg-primary/30 dark:text-primary-foreground",
-  completed: "bg-stone-100 text-stone-800 dark:bg-stone-800 dark:text-stone-200",
-  cancelled: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200",
-  "no-show": "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200",
-  waiting: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
-  notified: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200",
-  expired: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-  available: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200",
-  occupied: "bg-primary/15 text-primary dark:bg-primary/30 dark:text-primary-foreground",
-  reserved: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200",
-  maintenance: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200",
+  confirmed: "bg-emerald-100 text-emerald-800",
+  seated: "bg-primary/15 text-primary",
+  completed: "bg-stone-100 text-stone-800",
+  cancelled: "bg-red-100 text-red-800",
+  "no-show": "bg-orange-100 text-orange-800",
+  waiting: "bg-amber-100 text-amber-800",
+  notified: "bg-sky-100 text-sky-800",
+  expired: "bg-stone-100 text-stone-800",
+  available: "bg-emerald-100 text-emerald-800",
+  occupied: "bg-primary/15 text-primary",
+  reserved: "bg-sky-100 text-sky-800",
+  maintenance: "bg-orange-100 text-orange-800",
 };
 
 type Tab = "tables" | "reservations" | "waitlist";
@@ -85,7 +86,7 @@ export default function AdminDashboardPage() {
   const [tab, setTab] = useState<Tab>("tables");
   const [tableForm, setTableForm] = useState<Omit<Table, "_id" | "createdAt" | "updatedAt">>({
     tableNumber: "",
-    capactiy: 1,
+    capacity: 1,
     location: "indoor",
     status: "available",
     isActive: true,
@@ -155,7 +156,8 @@ export default function AdminDashboardPage() {
     const result = await createTable(tableForm);
     if (result) {
       toast.success("Table added");
-      setTableForm({ tableNumber: "", capactiy: 1, location: "indoor", status: "available", isActive: true });
+      await fetchTables();
+      setTableForm({ tableNumber: "", capacity: 1, location: "indoor", status: "available", isActive: true });
     } else {
       toast.error(errors.mutation || "Failed to add table");
     }
@@ -167,6 +169,7 @@ export default function AdminDashboardPage() {
     const result = await updateTable(editingTable._id, editingTable);
     if (result) {
       toast.success("Table updated");
+      await fetchTables();
       setEditingTable(null);
     } else {
       toast.error(errors.mutation || "Failed to update table");
@@ -175,8 +178,12 @@ export default function AdminDashboardPage() {
 
   const handleDeleteTable = async (id: string) => {
     const ok = await deleteTable(id);
-    if (ok) toast.success("Table deleted");
-    else toast.error(errors.mutation || "Failed to delete table");
+    if (ok) {
+      toast.success("Table deleted");
+      await fetchTables();
+    } else {
+      toast.error(errors.mutation || "Failed to delete table");
+    }
   };
 
   const handleUpdateReservationStatus = async (id: string, status: string) => {
@@ -257,7 +264,8 @@ export default function AdminDashboardPage() {
             <StatCard
               icon={<RefreshCw className="size-5" strokeWidth={1.5} />}
               label="Occupancy"
-              value={`${occupancyRate}%`}
+              value={occupancyRate}
+              suffix="%"
             />
           </StaggerItem>
         </StaggerContainer>
@@ -283,7 +291,7 @@ export default function AdminDashboardPage() {
                     labelStyle={{ color: "var(--foreground)" }}
                     itemStyle={{ color: "var(--foreground)" }}
                   />
-                  <Bar dataKey="count" fill={CHART_FOREST} radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="count" fill={CHART_TERRACOTTA} radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -308,7 +316,7 @@ export default function AdminDashboardPage() {
                     paddingAngle={4}
                   >
                     {tableStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={[CHART_FOREST, CHART_MOSS, CHART_AMBER, CHART_TERRACOTTA][index % 4]} />
+                      <Cell key={`cell-${index}`} fill={[CHART_TERRACOTTA, CHART_SAGE, CHART_AMBER, CHART_CHARCOAL][index % 4]} />
                     ))}
                   </Pie>
                   <Tooltip
@@ -347,7 +355,7 @@ export default function AdminDashboardPage() {
                     labelStyle={{ color: "var(--foreground)" }}
                     itemStyle={{ color: "var(--foreground)" }}
                   />
-                  <Bar dataKey="value" fill={CHART_MOSS} radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="value" fill={CHART_CHARCOAL} radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -355,16 +363,10 @@ export default function AdminDashboardPage() {
         </AnimatedSection>
 
         <AnimatedSection delay={0.4} className="mt-10">
-          <Tabs value={tab} onValueChange={() => {}}>
+          <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
             <TabsList className="mb-6">
               {(["tables", "reservations", "waitlist"] as Tab[]).map((t) => (
-                <TabsTrigger
-                  key={t}
-                  value={t}
-                  active={tab === t}
-                  onClick={() => setTab(t)}
-                  className="capitalize"
-                >
+                <TabsTrigger key={t} value={t} className="capitalize">
                   {t}
                 </TabsTrigger>
               ))}
@@ -376,7 +378,7 @@ export default function AdminDashboardPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Add table</CardTitle>
-                  <CardDescription>Create a new table for guests to book.</CardDescription>
+                  <CardDescription>Create a new table for guests to book</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleCreateTable} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -398,33 +400,45 @@ export default function AdminDashboardPage() {
                         type="number"
                         min={1}
                         required
-                        value={tableForm.capactiy}
-                        onChange={(e) => setTableForm({ ...tableForm, capactiy: Number(e.target.value) })}
+                        value={tableForm.capacity}
+                        onChange={(e) => setTableForm({ ...tableForm, capacity: Number(e.target.value) })}
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="location">Location</Label>
                       <Select
-                        id="location"
                         value={tableForm.location}
-                        onChange={(e) => setTableForm({ ...tableForm, location: e.target.value })}
+                        onValueChange={(value) => setTableForm({ ...tableForm, location: value })}
                       >
-                        <option value="indoor">Indoor</option>
-                        <option value="outdoor">Outdoor</option>
-                        <option value="balcony">Balcony</option>
+                        <SelectTrigger id="location" aria-label="Location">
+                          <SelectValue placeholder="Select location">
+                            {tableForm.location ? tableForm.location.charAt(0).toUpperCase() + tableForm.location.slice(1) : "Select location"}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="indoor">Indoor</SelectItem>
+                          <SelectItem value="outdoor">Outdoor</SelectItem>
+                          <SelectItem value="balcony">Balcony</SelectItem>
+                        </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="status">Status</Label>
                       <Select
-                        id="status"
                         value={tableForm.status}
-                        onChange={(e) => setTableForm({ ...tableForm, status: e.target.value as Table["status"] })}
+                        onValueChange={(value) => setTableForm({ ...tableForm, status: value as Table["status"] })}
                       >
-                        <option value="available">Available</option>
-                        <option value="occupied">Occupied</option>
-                        <option value="reserved">Reserved</option>
-                        <option value="maintenance">Maintenance</option>
+                        <SelectTrigger id="status" aria-label="Status">
+                          <SelectValue placeholder="Select status">
+                            {tableForm.status ? tableForm.status.charAt(0).toUpperCase() + tableForm.status.slice(1) : "Select status"}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="available">Available</SelectItem>
+                          <SelectItem value="occupied">Occupied</SelectItem>
+                          <SelectItem value="reserved">Reserved</SelectItem>
+                          <SelectItem value="maintenance">Maintenance</SelectItem>
+                        </SelectContent>
                       </Select>
                     </div>
                     <div className="flex items-end">
@@ -441,9 +455,9 @@ export default function AdminDashboardPage() {
                 </div>
               )}
 
-              <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" stagger={0.05}>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {tables.map((table) => (
-                  <StaggerItem key={table._id}>
+                  <div key={table._id}>
                     <Card className="h-full">
                       <CardHeader className="flex flex-row items-start justify-between">
                         <div>
@@ -465,8 +479,8 @@ export default function AdminDashboardPage() {
                             <Input
                               type="number"
                               min={1}
-                              value={editingTable.capactiy}
-                              onChange={(e) => setEditingTable({ ...editingTable, capactiy: Number(e.target.value) })}
+                              value={editingTable.capacity}
+                              onChange={(e) => setEditingTable({ ...editingTable, capacity: Number(e.target.value) })}
                             />
                             <div className="flex gap-2">
                               <Button type="submit" size="sm" disabled={loading.mutation}>Save</Button>
@@ -476,7 +490,7 @@ export default function AdminDashboardPage() {
                         ) : (
                           <>
                             <div className="flex items-baseline gap-2">
-                              <span className="font-display text-3xl font-semibold">{table.capactiy}</span>
+                              <span className="font-display text-3xl font-semibold">{table.capacity}</span>
                               <span className="text-sm text-muted-foreground">guests</span>
                             </div>
                             <div className="mt-4 flex gap-2">
@@ -487,9 +501,9 @@ export default function AdminDashboardPage() {
                         )}
                       </CardContent>
                     </Card>
-                  </StaggerItem>
+                  </div>
                 ))}
-              </StaggerContainer>
+              </div>
             </div>
           )}
 
@@ -573,24 +587,50 @@ export default function AdminDashboardPage() {
   );
 }
 
+function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string }) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true });
+  const spring = useSpring(0, { stiffness: 60, damping: 20 });
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    if (isInView) spring.set(value);
+  }, [isInView, value, spring]);
+
+  useMotionValueEvent(spring, "change", (latest) => {
+    setDisplay(Math.round(latest));
+  });
+
+  return (
+    <span ref={ref}>
+      {display}
+      {suffix}
+    </span>
+  );
+}
+
 function StatCard({
   icon,
   label,
   value,
+  suffix,
 }: {
   icon: React.ReactNode;
   label: string;
-  value: React.ReactNode;
+  value: number;
+  suffix?: string;
 }) {
   return (
     <Card className="h-full">
-      <CardContent className="flex items-center gap-4 p-5">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
+      <CardContent className="flex items-center gap-4 p-6">
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
           {icon}
         </div>
         <div>
           <p className="text-xs font-mono uppercase tracking-wide text-muted-foreground">{label}</p>
-          <p className="font-display text-2xl font-semibold tracking-tight">{value}</p>
+          <p className="font-display text-3xl font-semibold tracking-tight">
+            <AnimatedNumber value={value} suffix={suffix} />
+          </p>
         </div>
       </CardContent>
     </Card>
@@ -627,13 +667,17 @@ function ReservationCard({
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <Select
             value={reservation.status}
-            onChange={(e) => onStatusChange(reservation._id, e.target.value)}
-            className="w-auto min-w-[140px]"
+            onValueChange={(value) => onStatusChange(reservation._id, value)}
           >
-            <option value="confirmed">Confirmed</option>
-            <option value="seated">Seated</option>
-            <option value="completed">Completed</option>
-            <option value="no-show">No-show</option>
+            <SelectTrigger className="w-auto min-w-[140px]" aria-label="Reservation status">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="seated">Seated</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="no-show">No-show</SelectItem>
+            </SelectContent>
           </Select>
           <Button size="sm" variant="destructive" onClick={() => onCancel(reservation._id)}>Cancel</Button>
         </div>

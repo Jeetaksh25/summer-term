@@ -3,7 +3,7 @@ import path from "path";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { connectDB } from "../config/config.js";
-import { seedAdmin } from "../config/seed.js";
+import { seedAdmin, migrateTables } from "../config/seed.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import { createServer } from "http";
@@ -50,5 +50,6 @@ const PORT = process.env.PORT || 5001;
 server.listen(PORT, async () => {
   await connectDB();
   await seedAdmin();
+  await migrateTables();
   console.log(`Server running on http://localhost:${PORT}`);
 });

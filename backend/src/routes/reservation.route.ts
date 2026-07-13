@@ -1,6 +1,7 @@
 import express from "express";
 import {
     getReservation,
+    getAvailability,
     createReservation,
     updateReservation,
     cancelReservation,
@@ -12,6 +13,7 @@ import { reservationSchema } from "../validators/booking.validator.js";
 
 const router = express.Router();
 
+router.get("/availability", getAvailability);
 router.get("/", protect, restrictTo("admin", "owner", "staff"), getReservation);
 router.post("/", guestBookingLimiter, validate(reservationSchema), createReservation);
 router.put("/:id", protect, restrictTo("admin", "owner", "staff"), updateReservation);

@@ -29,14 +29,17 @@ interface ErrorMap {
 interface FunctionStore {
   tables: Table[];
   reservations: Reservation[];
+  availability: { table: string; startTime: string; endTime: string }[];
   waitlist: WaitlistEntry[];
   selectedDate: string;
+  selectedTable: Table | null;
   loading: LoadingMap;
   errors: ErrorMap;
   user: User | null;
   isAuthenticated: boolean;
 
   setSelectedDate: (date: string) => void;
+  setSelectedTable: (table: Table | null) => void;
   clearError: (key: keyof ErrorMap) => void;
 
   login: (email: string, password: string) => Promise<User | null>;
@@ -54,6 +57,7 @@ interface FunctionStore {
   deleteTable: (id: string) => Promise<boolean>;
 
   fetchReservations: (date?: string) => Promise<void>;
+  fetchAvailability: (date: string) => Promise<{ table: string; startTime: string; endTime: string }[]>;
   createReservation: (
     payload: Omit<Reservation, "_id" | "createdAt" | "updatedAt" | "status">
   ) => Promise<Reservation | null>;
@@ -79,7 +83,7 @@ const initialLoading: LoadingMap = {
   reservations: false,
   waitlist: false,
   mutation: false,
-  auth: true,
+  auth: false,
 };
 
 const initialErrors: ErrorMap = {
@@ -100,17 +104,40 @@ const errorMessage = (err: unknown): string => {
   return "Something went wrong";
 };
 
+const loadSelectedTable = (): Table | null => {
+  if (typeof window === "undefined") return null;
+  const raw = sessionStorage.getItem("selectedTable");
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
 export const useFunctionStore = create<FunctionStore>((set, get) => ({
   tables: [],
   reservations: [],
+  availability: [],
   waitlist: [],
   selectedDate: new Date().toISOString().split("T")[0],
+  selectedTable: loadSelectedTable(),
   loading: initialLoading,
   errors: initialErrors,
   user: null,
   isAuthenticated: false,
 
   setSelectedDate: (date) => set({ selectedDate: date }),
+  setSelectedTable: (table) => {
+    if (typeof window !== "undefined") {
+      if (table) {
+        sessionStorage.setItem("selectedTable", JSON.stringify(table));
+      } else {
+        sessionStorage.removeItem("selectedTable");
+      }
+    }
+    set({ selectedTable: table });
+  },
   clearError: (key) =>
     set((state) => ({ errors: { ...state.errors, [key]: null } })),
 
@@ -240,6 +267,20 @@ export const useFunctionStore = create<FunctionStore>((set, get) => ({
       set((state) => ({
         loading: { ...state.loading, reservations: false },
       }));
+    }
+  },
+
+  fetchAvailability: async (date) => {
+    try {
+      const { data } = await api.get<{ table: string; startTime: string; endTime: string }[]>(
+        "/api/reservations/availability",
+        { params: { date } }
+      );
+      set({ availability: data });
+      return data;
+    } catch (err) {
+      set({ errors: { ...get().errors, mutation: errorMessage(err) } });
+      return [];
     }
   },
 
