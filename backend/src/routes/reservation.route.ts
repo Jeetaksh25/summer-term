@@ -1,11 +1,20 @@
 import express from "express";
-import { getReservation, createReservation, updateReservation, cancelReservation } from "../controllers/reservation.controller.js";
+import {
+    getReservation,
+    createReservation,
+    updateReservation,
+    cancelReservation,
+} from "../controllers/reservation.controller.js";
+import { protect, restrictTo } from "../middleware/auth.js";
+import { guestBookingLimiter } from "../middleware/rateLimiter.js";
+import { validate } from "../middleware/validate.js";
+import { reservationSchema } from "../validators/booking.validator.js";
 
 const router = express.Router();
 
-router.get("/", getReservation);
-router.post("/", createReservation);
-router.put("/:id", updateReservation);
+router.get("/", protect, restrictTo("admin", "owner", "staff"), getReservation);
+router.post("/", guestBookingLimiter, validate(reservationSchema), createReservation);
+router.put("/:id", protect, restrictTo("admin", "owner", "staff"), updateReservation);
 router.patch("/:id/cancel", cancelReservation);
 
 export default router;

@@ -9,6 +9,7 @@ import { createServer } from "http";
 import tableRoutes from "./routes/table.route.js"
 import reservationRoutes from "./routes/reservation.route.js"
 import waitlistRoutes from "./routes/waitlist.route.js";
+import authRoutes from "./routes/auth.route.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
 
 const app = express();
@@ -38,6 +39,7 @@ app.get("/", (req, res) => {
 app.use("/api/tables", tableRoutes);
 app.use("/api/reservations", reservationRoutes);
 app.use("/api/waitlist", waitlistRoutes);
+app.use("/api/auth", authRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

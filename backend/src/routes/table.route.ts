@@ -4,13 +4,14 @@ import {
     createTable,
     updateTable,
     deleteTable,
-} from "../controllers/table.controller.js"
+} from "../controllers/table.controller.js";
+import { protect, restrictTo } from "../middleware/auth.js";
 
 const router = express.Router();
 
 router.get("/", getTables);
-router.post("/", createTable);
-router.put("/:id", updateTable);
-router.delete("/:id", deleteTable);
+router.post("/", protect, restrictTo("admin", "owner", "staff"), createTable);
+router.put("/:id", protect, restrictTo("admin", "owner", "staff"), updateTable);
+router.delete("/:id", protect, restrictTo("admin", "owner", "staff"), deleteTable);
 
 export default router;
