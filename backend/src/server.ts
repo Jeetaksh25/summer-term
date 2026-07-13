@@ -7,8 +7,8 @@ import { seedAdmin, migrateTables } from "../config/seed.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import { createServer } from "http";
-import tableRoutes from "./routes/table.route.js"
-import reservationRoutes from "./routes/reservation.route.js"
+import tableRoutes from "./routes/table.route.js";
+import reservationRoutes from "./routes/reservation.route.js";
 import waitlistRoutes from "./routes/waitlist.route.js";
 import authRoutes from "./routes/auth.route.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
@@ -26,9 +26,13 @@ dotenv.config({
 app.use(express.json());
 app.use(cookieParser());
 
+const allowedOrigins = process.env.CLIENT_ORIGIN
+  ? [process.env.CLIENT_ORIGIN]
+  : ["http://localhost:3000"];
+
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: allowedOrigins,
     credentials: true,
   })
 );

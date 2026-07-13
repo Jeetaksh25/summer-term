@@ -217,13 +217,13 @@ export default function Home() {
                   Reserve without friction
                 </h2>
               </AnimatedSection>
-              <AnimatedSection delay={0.3}>
+              <AnimatedSection delay={0.25}>
                 <p className="mt-5 max-w-md text-lg leading-relaxed text-muted-foreground">
                   Pick a table, choose a time, and receive confirmation. No
                   account needed, no endless forms
                 </p>
               </AnimatedSection>
-              <AnimatedSection delay={0.4}>
+              <AnimatedSection delay={0.3}>
                 <Button
                   asChild
                   className="mt-8 h-14 gap-2 rounded-full px-8 text-base"
@@ -273,13 +273,13 @@ export default function Home() {
                   Manage the room with clarity
                 </h2>
               </AnimatedSection>
-              <AnimatedSection delay={0.3}>
+              <AnimatedSection delay={0.25}>
                 <p className="mt-5 max-w-md text-lg leading-relaxed text-muted-foreground">
                   See table status at a glance, update reservations, and move
                   the waitlist forward with a few clicks
                 </p>
               </AnimatedSection>
-              <AnimatedSection delay={0.4}>
+              <AnimatedSection delay={0.3}>
                 <Button
                   asChild
                   variant="outline"
